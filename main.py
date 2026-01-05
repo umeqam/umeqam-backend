@@ -1,20 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 app = FastAPI(title="UMEQAM Dream Analyzer")
 
-try:
-    client = OpenAI(
-        api_key=os.getenv("XAI_API_KEY"),
-        base_url="https://api.x.ai/v1"
-    )
-except Exception as e:
-    client = None  # если ключ плохой
+client = OpenAI(
+    api_key=os.getenv("XAI_API_KEY"),
+    base_url="https://api.x.ai/v1"
+)
 
 class DreamRequest(BaseModel):
     dream_text: str
@@ -25,9 +19,6 @@ async def analyze_dream(request: DreamRequest):
         raise HTTPException(status_code=400, detail="Описание сна не может быть пустым")
 
     dream = request.dream_text
-
-    if not client:
-        return {"error": "API ключ не настроен. Обратитесь к администратору."}
 
     analyses = []
     prompts = [
@@ -46,7 +37,7 @@ async def analyze_dream(request: DreamRequest):
                 max_tokens=200
             )
             analyses.append(response.choices[0].message.content.strip())
-        except Exception as e:
+        except Exception:
             analyses.append("Не удалось проанализировать этот аспект.")
 
     image_url = "https://via.placeholder.com/1024x1024.png?text=Картинка+не+сгенерирована"
@@ -58,7 +49,7 @@ async def analyze_dream(request: DreamRequest):
             size="1024x1024"
         )
         image_url = image_response.data[0].url
-    except Exception as e:
+    except Exception:
         pass
 
     conclusion = "Это одна из интерпретаций. Сны — зеркало твоего внутреннего мира. Что ты чувствуешь? 💭"
